@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="form-container">
+    <h2>Adicionar Serviço</h2>
+
+    <form method="post" novalidate>
+        {{ form.hidden_tag() }}  
+
+        <div>
+            {{ form.nome.label }}<br>
+            {{ form.nome(size=40) }}
+            {% for error in form.nome.errors %}
+                <span style="color:red;">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div>
+            {{ form.descricao.label }}<br>
+            {{ form.descricao(size=60) }}
+            {% for error in form.descricao.errors %}
+                <span style="color:red;">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div>
+            {{ form.valor.label }}<br>
+            {{ form.valor(min=1, step=1) }}
+            {% for error in form.valor.errors %}
+                <span style="color:red;">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 10px;">
+            {{ form.submit() }}
+            <a href="{{ url_for('perfil', user_id=session['usuario_id']) }}">
+                <button type="button">Cancelar</button>
+            </a>
+        </div>
+    </form>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+        {% for msg in messages %}
+          <li style="color:green;">{{ msg }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+</div>
+{% endblock %}
+

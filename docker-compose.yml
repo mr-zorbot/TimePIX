@@ -1,0 +1,126 @@
+services:
+  # ======================
+  # Banco de Dados MySQL
+  # ======================
+  mysql:
+    image: mysql:8.0
+    container_name: timepix_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword # credenciais de teste
+      MYSQL_DATABASE: timepix_db
+      MYSQL_USER: timepix_user
+      MYSQL_PASSWORD: strongpass123 # idem
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - timepix_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ======================
+  # RabbitMQ
+  # ======================
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: timepix_rabbit
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest # credenciais de teste
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"     # Porta de mensagens
+      - "15672:15672"   # Painel de administração
+    networks:
+      - timepix_net
+    healthcheck: 
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ======================
+  # Aplicação Flask
+  # ======================
+  app:
+    build: .
+    container_name: timepix_app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "mysql+pymysql://timepix_user:strongpass123@mysql:3306/timepix_db" # credenciais de teste
+      RABBIT_HOST: "rabbitmq"
+      RABBIT_PORT: 5672
+      RABBIT_USER: "guest"
+      RABBIT_PASS: "guest"
+      SECRET_KEY: "mude-esta-chave-em-producao"
+      FLASK_DEBUG: "1"
+    ports:
+      - "8080:8080"
+    networks:
+      - timepix_net
+    command: ["python3", "app.py"]
+
+  # ======================
+  # Worker de Transações
+  # ======================
+  worker_transacoes:
+    build: .
+    container_name: timepix_worker_transacoes
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "mysql+pymysql://timepix_user:strongpass123@mysql:3306/timepix_db" # credenciais de teste
+      RABBIT_HOST: "rabbitmq"
+      RABBIT_PORT: 5672
+      RABBIT_USER: "guest"
+      RABBIT_PASS: "guest"
+    networks:
+      - timepix_net
+    command: ["python3", "worker_transacoes.py"]
+
+  # ======================
+  # Worker de Auditoria
+  # ======================
+  worker_auditoria:
+    build: .
+    container_name: timepix_worker_auditoria
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "mysql+pymysql://timepix_user:strongpass123@mysql:3306/timepix_db" # credenciais de teste
+      RABBIT_HOST: "rabbitmq"
+      RABBIT_PORT: 5672
+      RABBIT_USER: "guest"
+      RABBIT_PASS: "guest"
+    networks:
+      - timepix_net
+    command: ["python3", "worker_auditoria.py"]
+
+# ======================
+# Volumes e Rede
+# ======================
+volumes:
+  mysql_data:
+
+networks:
+  timepix_net:
+    driver: bridge
+

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="form-container">
+    <h2>Gerenciar Serviços</h2>
+
+    <!-- ✅ Formulário de adição -->
+    <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div>
+            {{ form.nome.label }}<br>
+            {{ form.nome(size=40) }}
+            {% for error in form.nome.errors %}
+                <span style="color:red;">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div>
+            {{ form.descricao.label }}<br>
+            {{ form.descricao(size=60) }}
+            {% for error in form.descricao.errors %}
+                <span style="color:red;">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div>
+            {{ form.valor.label }}<br>
+            {{ form.valor(min=1, step=1) }}
+            {% for error in form.valor.errors %}
+                <span style="color:red;">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 10px;">
+            {{ form.submit(value="Adicionar Serviço") }}
+        </div>
+    </form>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+        {% for msg in messages %}
+          <li style="color:green;">{{ msg }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <!-- ✅ Lista de serviços existentes -->
+    <h3 style="margin-top: 30px;">Seus Serviços</h3>
+
+    {% if servicos %}
+        <table border="1" cellpadding="6" cellspacing="0">
+            <tr>
+                <th>Nome</th>
+                <th>Descrição</th>
+                <th>Valor</th>
+                <th>Ações</th>
+            </tr>
+            {% for s in servicos %}
+            <tr>
+                <td>{{ s.title }}</td>
+                <td>{{ s.description }}</td>
+                <td>{{ s.value }}h</td>
+                <td>
+                    <a href="{{ url_for('editar_servico', service_id=s.id) }}">
+                        <button type="button">Editar</button>
+                    </a>
+                    <form action="{{ url_for('excluir_servico', service_id=s.id) }}" method="post" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" onclick="return confirm('Excluir este serviço?');">Excluir</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>Você ainda não cadastrou nenhum serviço.</p>
+    {% endif %}
+
+    <div style="margin-top:20px;">
+        <a href="{{ url_for('perfil', user_id=session['usuario_id']) }}">
+            <button type="button">Voltar ao Perfil</button>
+        </a>
+    </div>
+</div>
+{% endblock %}
+

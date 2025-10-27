@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="perfil-container">
+    <h2>Perfil de {{ user.first_name }} {{ user.last_name }}</h2>
+
+    <div class="info-basica">
+        <p><strong>E-mail:</strong> {{ user.email }}</p>
+        <p><strong>Telefone:</strong> {{ user.phone }}</p>
+        <p><strong>Saldo disponível:</strong> {{ user.balance }}h</p>
+    </div>
+
+    <div class="acoes-perfil">
+        {% if can_edit %}
+            <a href="{{ url_for('editar_perfil') }}"><button>Editar Perfil</button></a>
+            <a href="{{ url_for('gerenciar_servicos') }}"><button>Gerenciar Serviços</button></a>
+            <a href="{{ url_for('transferencias') }}"><button>Realizar Transferência</button></a>
+        {% endif %}
+        <a href="{{ url_for('home') }}"><button>Voltar à Home</button></a>
+    </div>
+
+    <hr>
+
+    <h3>Serviços e Habilidades</h3>
+    {% if user.services %}
+        <ul class="lista-servicos">
+        {% for s in user.services %}
+            <li>
+                <strong>{{ s.title }}</strong> — {{ s.value }}h<br>
+                <small>{{ s.description }}</small>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Nenhum serviço cadastrado.</p>
+    {% endif %}
+</div>
+{% endblock %}
+

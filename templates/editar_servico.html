@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="form-container">
+    <h2>Editar Serviço</h2>
+    <form method="post">
+        {{ form.hidden_tag() }}
+        <div>
+            {{ form.nome.label }}<br>
+            {{ form.nome(size=40) }}
+        </div>
+        <div>
+            {{ form.descricao.label }}<br>
+            {{ form.descricao(size=60) }}
+        </div>
+        <div>
+            {{ form.valor.label }}<br>
+            {{ form.valor(min=1, step=1) }}
+        </div>
+        <div style="margin-top:10px;">
+            {{ form.submit(value="Salvar Alterações") }}
+            <a href="{{ url_for('gerenciar_servicos') }}"><button type="button">Cancelar</button></a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="transferencias-container">
+    <h2>Transferências</h2>
+
+    <div class="saldo">
+        <h3>Saldo disponível: {{ usuario.balance }}h</h3>
+    </div>
+
+    <div class="nova-transferencia">
+        <h3>Nova Transferência</h3>
+        <form method="post">
+            {{ form.hidden_tag() }}
+            {{ form.email_destino.label }} {{ form.email_destino(size=40) }}<br>
+            {{ form.valor.label }} {{ form.valor() }}<br>
+            {{ form.submit() }}
+        </form>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <ul class="erros">
+              {% for msg in messages %}
+                <li style="color:red;">{{ msg }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="historico">
+        <h3>Últimas Transações</h3>
+        {% if historico %}
+        <table>
+            <tr>
+                <th>Remetente</th>
+                <th>Destinatário</th>
+                <th>Data</th>
+                <th>Valor</th>
+                <th>Status</th>
+            </tr>
+            {% for t in historico %}
+            <tr>
+                <td>{{ t.remetente }}</td>
+                <td>{{ t.destinatario }}</td>
+                <td>{{ t.data }}</td>
+                <td>{{ t.valor }}h</td>
+                <td>{{ t.status }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p>Nenhuma transação registrada.</p>
+        {% endif %}
+    </div>
+
+    <div class="botoes">
+        <a href="{{ url_for('perfil', user_id=session['usuario_id']) }}"><button>Voltar ao Perfil</button></a>
+        <a href="{{ url_for('historico_geral') }}"><button>Ver Histórico Geral</button></a>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,153 @@
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #6dd5ed, #2193b0);
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.container {
+    background: #f8f8f8;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 800px;
+}
+.form-container input, .form-container button {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+}
+.form-container button {
+    background: #4b4ded;
+    border: none;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+.home-container {
+    width: 600px;
+}
+.servico-card {
+    background: white;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 8px;
+}
+
+.search-bar {
+    margin: 20px 0;
+    display: flex;
+    gap: 8px;
+}
+
+.search-bar input {
+    flex: 1;
+    padding: 8px;
+}
+
+.search-bar button {
+    padding: 8px 12px;
+    background: #4b4ded;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+/* ---- Formulários ---- */
+.input-field {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background-color: #222;
+  color: #fff;
+}
+
+/* ---- Tabela ---- */
+.servicos-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.servicos-tabela th, .servicos-tabela td {
+  border: 1px solid #555;
+  padding: 10px;
+  text-align: left;
+}
+
+.servicos-tabela th {
+  background-color: #333;
+  color: #fff;
+}
+
+.servicos-tabela tr:nth-child(even) {
+  background-color: #2a2a2a;
+}
+
+.acoes {
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* ---- Botões ---- */
+.btn-primary, .btn-secondary, .btn-danger, .btn-small {
+  display: inline-block;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+}
+
+.btn-secondary {
+  background-color: #6b7280;
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+.btn-danger {
+  background-color: #dc2626;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background-color: #b91c1c;
+}
+
+.btn-small {
+  font-size: 0.9em;
+  padding: 6px 12px;
+  margin: 2px;
+}
+
+/* ---- Flash messages ---- */
+.flash-messages {
+  margin-top: 10px;
+  list-style: none;
+  padding: 0;
+}
+
+.flash-messages li {
+  color: #22c55e;
+  font-weight: bold;
+}
+
+
+

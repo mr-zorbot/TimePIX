@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="form-container">
+    <h2>Editar Perfil</h2>
+
+    <form method="post" novalidate>
+        {{ form.hidden_tag() }}  {# ✅ Corrigido: usa hidden_tag() do FlaskForm #}
+
+        <label for="first_name">Nome:</label><br>
+        <input type="text" id="first_name" name="first_name" value="{{ user.first_name }}" required><br><br>
+
+        <label for="phone">Telefone:</label><br>
+        <input type="text" id="phone" name="phone"
+               value="{{ user.phone }}"
+               pattern="\(\d{2}\) \d \d{4}-\d{4}"
+               placeholder="(XX) X XXXX-XXXX"
+               required><br><br>
+
+        <label for="email">E-mail:</label><br>
+        <input type="email" id="email" name="email" value="{{ user.email }}" required><br><br>
+
+        <hr>
+
+        <h3>Alterar Senha</h3>
+        <label for="senha_atual">Senha atual:</label><br>
+        <input type="password" id="senha_atual" name="senha_atual"><br><br>
+
+        <label for="nova_senha">Nova senha:</label><br>
+        <input type="password" id="nova_senha" name="nova_senha"><br><br>
+
+        <label for="confirmar_senha">Confirmar nova senha:</label><br>
+        <input type="password" id="confirmar_senha" name="confirmar_senha"><br><br>
+
+        <button type="submit">Salvar Alterações</button>
+        <a href="{{ url_for('perfil', user_id=user.id) }}">
+            <button type="button">Cancelar</button>
+        </a>
+    </form>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class="erros">
+          {% for msg in messages %}
+            <li style="color:red;">{{ msg }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+</div>
+{% endblock %}
+
