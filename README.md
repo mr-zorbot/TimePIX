@@ -25,6 +25,8 @@ O **RabbitMQ** é o sistema de mensageria do TimePIX, responsável por tornar os
 ### 🗄️ MySQL 
 O **MySQL** é o gerenciador do banco de dados do TimePIX, armazenando usuários, ofertas, solicitações, transações e saldos de horas.
 
+---
+
 ## ✅ Fluxo simplificado de funcioamento
 
 1. **Usuário preenche o formulário de transações**
