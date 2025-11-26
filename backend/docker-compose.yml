@@ -34,11 +34,11 @@ services:
       RABBITMQ_DEFAULT_USER: guest # credenciais de teste
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "5672:5672"     # Porta de mensagens
-      - "15672:15672"   # Painel de administração
+      - "5672:5672" # Porta de mensagens
+      - "15672:15672" # Painel de administração
     networks:
       - timepix_net
-    healthcheck: 
+    healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 5s
       timeout: 5s
@@ -123,4 +123,3 @@ volumes:
 networks:
   timepix_net:
     driver: bridge
-

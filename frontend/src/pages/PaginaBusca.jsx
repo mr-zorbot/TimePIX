@@ -1,103 +1,124 @@
-import React, { useState } from 'react';
-import { LayoutApp } from '../components/LayoutApp';
-// AQUI ESTÁ A CORREÇÃO: 'from' em vez de 'in'
-import { Botao } from '../components/Botao';
-import { Input } from '../components/Input';
-import { ResultadoBusca } from '../components/ResultadoBusca';
-import styled from 'styled-components';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { LayoutApp } from "../components/LayoutApp";
+import { Botao } from "../components/Botao";
+import { Input } from "../components/Input";
+import { ResultadoBusca } from "../components/ResultadoBusca"; //
+import styled from "styled-components";
+import { Link } from "react-router-dom";
 
 const BuscaLayout = styled.div`
   display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
-
   @media (min-width: 1024px) {
     grid-template-columns: 250px 1fr;
   }
 `;
-
 const Sidebar = styled.aside`
   display: flex;
   flex-direction: column;
   gap: 1rem;
 `;
-
 const MainContent = styled.main`
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 `;
-
-const SearchBar = styled.div`
+const SearchBar = styled.form`
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 1rem;
-  align-items: flex-end; 
-
+  align-items: flex-end;
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
-    align-items: stretch;
   }
 `;
-
-const ButtonContainer = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  
-  @media (min-width: 640px) {
-    width: 250px;
-    align-self: flex-end;
-  }
-`;
-
 const ResultsList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 `;
 
-const mockResultados = [
-  { id: 1, nome: 'Teste da Silva', servico: 'Aula de Inglês', valor: '1 hora' },
-  { id: 2, nome: 'Jose das Couves', servico: 'Consultoria React', valor: '2 horas' },
-  { id: 3, nome: 'Mariazinha', servico: 'Design de Logo', valor: '3 horas' },
-];
-
 export const PaginaBusca = ({ onLogout }) => {
-  const [termoBusca, setTermoBusca] = useState('');
+  const [termoBusca, setTermoBusca] = useState("");
+  const [resultados, setResultados] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchServicos = async (query = "") => {
+    setLoading(true);
+    try {
+      const url = `http://localhost:8080/api/services?q=${query}`;
+      const response = await fetch(url, { credentials: "include" });
+      if (response.ok) {
+        const data = await response.json();
+        setResultados(data);
+      }
+    } catch (error) {
+      console.error("Erro na busca", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Carrega serviços ao montar o componente
+  useEffect(() => {
+    fetchServicos();
+  }, []);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    fetchServicos(termoBusca);
+  };
 
   return (
     <LayoutApp>
       <BuscaLayout>
-        {/* Coluna da Esquerda (Sidebar) */}
         <Sidebar>
-          <Link to="/perfil" style={{ textDecoration: 'none' }}>
+          <Link to="/perfil" style={{ textDecoration: "none" }}>
             <Botao fullWidth>Visualizar Perfil</Botao>
           </Link>
-          <Botao onClick={onLogout} fullWidth>Sair</Botao>
+          <Link to="/dashboard" style={{ textDecoration: "none" }}>
+            <Botao fullWidth style={{ backgroundColor: "#10b981" }}>
+              Transferir Horas
+            </Botao>
+          </Link>
+          <Botao
+            onClick={onLogout}
+            fullWidth
+            style={{ backgroundColor: "#ef4444" }}
+          >
+            Sair
+          </Botao>
         </Sidebar>
 
-        {/* Coluna da Direita (Conteúdo) */}
         <MainContent>
-          <SearchBar>
-            <Input 
-              placeholder="Encontre um serviço ou usuário"
+          <SearchBar onSubmit={handleSearch}>
+            <Input
+              placeholder="Busque por serviço ou nome..."
               type="text"
               value={termoBusca}
               onChange={(e) => setTermoBusca(e.target.value)}
             />
-            <Botao>Buscar</Botao>
+            <Botao type="submit">Buscar</Botao>
           </SearchBar>
 
-          <ButtonContainer>
-            <Link to="/dashboard" style={{ textDecoration: 'none', width: '100%' }}>
-              <Botao fullWidth>Transferir Horas</Botao>
-            </Link>
-          </ButtonContainer>
-
           <ResultsList>
-            {mockResultados.map(item => (
-              <ResultadoBusca key={item.id} item={item} />
+            {loading ? <p>Buscando...</p> : null}
+            {!loading && resultados.length === 0 && (
+              <p>Nenhum serviço encontrado.</p>
+            )}
+
+            {resultados.map((apiItem) => (
+              <ResultadoBusca
+                key={apiItem.id}
+                item={{
+                  nome: apiItem.owner_name,
+                  servico: apiItem.title,
+                  valor: `${apiItem.value}h`,
+                  email: apiItem.owner_email,
+                  telefone: apiItem.owner_phone,
+                }}
+              />
             ))}
           </ResultsList>
         </MainContent>

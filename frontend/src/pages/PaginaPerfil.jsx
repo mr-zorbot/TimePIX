@@ -1,59 +1,171 @@
-import React from 'react';
-import { LayoutApp } from '../components/LayoutApp';
-import { CartaoServico } from '../components/CartaoServico';
-import { Botao } from '../components/Botao';
-import styled from 'styled-components';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { LayoutApp } from "../components/LayoutApp";
+import { CartaoServico } from "../components/CartaoServico";
+import { Botao } from "../components/Botao";
+import styled from "styled-components";
+import { Link } from "react-router-dom";
 
-const PerfilHeader = styled.div`...`;
-const InfoUsuario = styled.div`...`;
-const AvatarContainer = styled.div`...`;
-const ServicosContainer = styled.section`...`;
-const ServicosHeader = styled.div`...`;
-const GridServicos = styled.div`...`;
+const PerfilHeader = styled.div`
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+`;
+const InfoUsuario = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+const InfoExtra = styled.div`
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+  color: #4b5563;
+  font-weight: 500;
+`;
+const AvatarContainer = styled.div`
+  width: 100px;
+  height: 100px;
+  background-color: #e0e7ff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: #4f46e5;
+  font-weight: bold;
+`;
+const ServicosContainer = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+const ServicosHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  h2 {
+    font-size: 1.5rem;
+    color: #111827;
+  }
+`;
+const GridServicos = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+`;
 
 export const PaginaPerfil = () => {
-  const servicos = [
-    { id: 1, nome: 'Aula de Inglês', descricao: 'Desenvolveremos sua conversação', valor: '1 hora' },
-    { id: 2, nome: 'Aula de Inglês', descricao: 'Preparação para prova', valor: '1 hora' },
-  ];
-  const habilidades = [
-    { id: 3, nome: 'Professor de Inglês', descricao: 'Posso ensinar gramática e pronúncia', valor: 'N/A' },
-  ];
+  const [perfil, setPerfil] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    carregarPerfil();
+  }, []);
+
+  const carregarPerfil = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/api/users/me", {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPerfil(data);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar perfil", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Função para remover o serviço
+  const handleRemoverServico = async (idServico) => {
+    if (!confirm("Tem certeza que deseja remover este serviço?")) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/services/${idServico}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        // Atualiza a lista localmente removendo o item deletado
+        setPerfil((prev) => ({
+          ...prev,
+          services: prev.services.filter((s) => s.id !== idServico),
+        }));
+      } else {
+        alert("Erro ao remover serviço. Tente novamente.");
+      }
+    } catch (error) {
+      console.error("Erro ao deletar:", error);
+      alert("Erro de conexão.");
+    }
+  };
+
+  if (loading) return <LayoutApp>Carregando...</LayoutApp>;
+  if (!perfil) return <LayoutApp>Erro ao carregar perfil.</LayoutApp>;
 
   return (
     <LayoutApp>
       <PerfilHeader>
         <InfoUsuario>
-          <h1>Perfil do Usuário</h1>
-          <p>Usuário de teste 1</p>
-          <p>teste1@testemail.com</p>
-          <Botao style={{ marginTop: '1rem', width: 'auto', padding: '0.75rem 1.5rem' }}>
+          <h1>
+            {perfil.first_name} {perfil.last_name}
+          </h1>
+          <p>{perfil.email}</p>
+          <InfoExtra>
+            <span>Saldo: {perfil.balance}h</span>
+            <span>Tel: {perfil.phone}</span>
+          </InfoExtra>
+          <Botao style={{ marginTop: "1rem", width: "fit-content" }}>
             Editar Perfil
           </Botao>
         </InfoUsuario>
         <AvatarContainer>
-          <img alt="Avatar do usuário" />
+          {perfil.first_name ? perfil.first_name.charAt(0).toUpperCase() : "?"}
         </AvatarContainer>
       </PerfilHeader>
 
       <ServicosContainer>
         <ServicosHeader>
-          <h2>Serviços e habilidades</h2>
+          <h2>Meus Serviços</h2>
           <Link to="/servico/novo">
-            <Botao style={{width: 'auto', padding: '0.75rem 1.5rem'}}>
-              Adicionar Novo Serviço
-            </Botao>
+            <Botao>Adicionar Novo</Botao>
           </Link>
         </ServicosHeader>
-        
+
         <GridServicos>
-          {servicos.map((item) => (
-            <CartaoServico key={item.id} tipo="Serviço" item={item} />
-          ))}
-          {habilidades.map((item) => (
-            <CartaoServico key={item.id} tipo="Habilidade" item={item} />
-          ))}
+          {perfil.services && perfil.services.length > 0 ? (
+            perfil.services.map((s) => (
+              <CartaoServico
+                key={s.id}
+                tipo="Serviço"
+                item={{
+                  id: s.id,
+                  nome: s.title,
+                  descricao: s.description,
+                  valor: `${s.value}h`,
+                }}
+                onRemove={handleRemoverServico} // ✅ Passamos a função aqui
+              />
+            ))
+          ) : (
+            <p>Você ainda não cadastrou nenhum serviço.</p>
+          )}
         </GridServicos>
       </ServicosContainer>
     </LayoutApp>

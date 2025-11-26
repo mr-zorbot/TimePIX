@@ -1,7 +1,7 @@
-import React from 'react';
-import styled from 'styled-components';
-import { Botao } from './Botao';
-import { Link } from 'react-router-dom'; 
+import React from "react";
+import styled from "styled-components";
+import { Botao } from "./Botao";
+import { Link } from "react-router-dom";
 
 const CardContainer = styled.div`
   background-color: white;
@@ -36,13 +36,13 @@ const CardFooter = styled.div`
   display: flex;
   gap: 0.75rem;
 
-  /* Aplica flex: 1 para os filhos diretos (o Link e o Botao) */
   & > * {
     flex: 1;
   }
 `;
 
-export const CartaoServico = ({ tipo = 'Serviço', item }) => {
+// Adicionamos 'onRemove' nas props e no botão
+export const CartaoServico = ({ tipo = "Serviço", item, onRemove }) => {
   return (
     <CardContainer>
       <CardHeader>{tipo}</CardHeader>
@@ -57,10 +57,19 @@ export const CartaoServico = ({ tipo = 'Serviço', item }) => {
         <span>{item.valor}</span>
       </CardContent>
       <CardFooter>
-        <Link to={`/servico/editar/${item.id}`} style={{ textDecoration: 'none' }}>
+        <Link
+          to={`/servico/editar/${item.id}`}
+          style={{ textDecoration: "none" }}
+        >
           <Botao>Editar</Botao>
         </Link>
-        <Botao>Remover</Botao>
+        {/* Botão Remover agora chama a função passando o ID */}
+        <Botao
+          onClick={() => onRemove && onRemove(item.id)}
+          style={{ backgroundColor: "#dc2626" }} // Vermelho para perigo
+        >
+          Remover
+        </Botao>
       </CardFooter>
     </CardContainer>
   );

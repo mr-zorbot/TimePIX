@@ -20,7 +20,22 @@ class User(Base):
 
     services = relationship(
         "Service", back_populates="owner", cascade="all, delete-orphan")
-    # histórico de transações recebidas/enviadas via trans table relations
+    
+    # Método para converter o objeto em dicionário (JSON)
+    def to_dict(self, include_private=False):
+        data = {
+            "id": self.id,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "email": self.email,
+        }
+        if include_private:
+            data["phone"] = self.phone
+            data["balance"] = self.balance
+            data["created_at"] = self.created_at.isoformat() if self.created_at else None
+            # Inclui os serviços do usuário no JSON
+            data["services"] = [s.to_dict() for s in self.services]
+        return data
 
 
 class Service(Base):
@@ -34,6 +49,17 @@ class Service(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     owner = relationship("User", back_populates="services")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "value": self.value,
+            "owner_id": self.owner_id,
+            # Pega o nome do dono através do relacionamento
+            "owner_name": f"{self.owner.first_name} {self.owner.last_name}" if self.owner else "Desconhecido"
+        }
 
 
 class Transaction(Base):
@@ -49,6 +75,20 @@ class Transaction(Base):
     created_at = Column(DateTime, server_default=func.now())
     processed_at = Column(DateTime, nullable=True)
     note = Column(String(255), nullable=True)
+
+    # Relacionamentos para facilitar o acesso aos nomes/emails na API
+    sender = relationship("User", foreign_keys=[sender_id])
+    recipient = relationship("User", foreign_keys=[recipient_id])
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "remetente": self.sender.email if self.sender else "Desconhecido",
+            "destinatario": self.recipient.email if self.recipient else "Desconhecido",
+            "valor": self.amount,
+            "status": self.status,
+            "data": self.created_at.strftime("%d/%m/%Y %H:%M") if self.created_at else ""
+        }
 
 
 class Audit(Base):
