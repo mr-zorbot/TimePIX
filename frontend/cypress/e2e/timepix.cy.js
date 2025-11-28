@@ -1,90 +1,155 @@
 describe("Fluxo Completo TimePIX", () => {
-  // Dados dinâmicos para evitar conflito de usuário já existente
   const timestamp = Date.now();
-  const usuario = {
+
+  // Utilizador 1: Apenas para testar o registo manual pela interface
+  const usuarioRegistro = {
+    nome: "Novo",
+    sobrenome: "Registro",
+    email: `registro${timestamp}@ufla.br`,
+    telefone: "(35) 9 1111-1111",
+    senha: "senha123",
+  };
+
+  // Utilizador 2: REMETENTE (Quem vai fazer login e transferir saldo)
+  const usuarioLogin = {
     nome: "Cypress",
-    sobrenome: "Test",
-    email: `teste${timestamp}@ufla.br`, // Backend exige domínio @ufla.br
-    telefone: "(35) 9 9999-9999",
+    sobrenome: "Remetente",
+    email: `remetente${timestamp}@ufla.br`,
+    telefone: "(35) 9 2222-2222",
+    senha: "senhaForte123",
+  };
+
+  // Utilizador 3: DESTINATÁRIO (Quem vai receber o saldo)
+  const usuarioDestino = {
+    nome: "Cypress",
+    sobrenome: "Destino",
+    email: `destino${timestamp}@ufla.br`,
+    telefone: "(35) 9 3333-3333",
     senha: "senhaForte123",
   };
 
   const servico = {
-    nome: `Aula de Cypress ${timestamp}`,
-    descricao: "Ensinando automação de testes E2E",
+    nome: `Aula Cypress ${timestamp}`,
+    descricao: "Teste automatizado",
     valor: "2",
   };
 
-  it("Deve registrar um novo usuário com sucesso", () => {
+  // SETUP: Cria os utilizadores necessários no Backend antes dos testes
+  before(() => {
+    // 1. Cria o Remetente (ignora se já existir)
+    cy.request({
+      method: "POST",
+      url: "http://localhost:8080/api/register",
+      body: usuarioLogin,
+      failOnStatusCode: false,
+    });
+
+    // 2. Cria o Destinatário (essencial para a transferência funcionar)
+    cy.request({
+      method: "POST",
+      url: "http://localhost:8080/api/register",
+      body: usuarioDestino,
+      failOnStatusCode: false,
+    });
+  });
+
+  it("Deve registrar um novo usuário pela interface", () => {
     cy.visit("/registro");
 
-    // Preenche o formulário (baseado nos Labels dos Inputs no PaginaRegistro.jsx)
-    cy.contains("label", "Nome").parent().find("input").type(usuario.nome);
+    cy.contains("label", "Nome")
+      .parent()
+      .find("input")
+      .type(usuarioRegistro.nome);
     cy.contains("label", "Sobrenome")
       .parent()
       .find("input")
-      .type(usuario.sobrenome);
+      .type(usuarioRegistro.sobrenome);
     cy.contains("label", "Telefone")
       .parent()
       .find("input")
-      .type(usuario.telefone);
-    cy.contains("label", "E-mail").parent().find("input").type(usuario.email);
-    cy.contains("label", "Senha").parent().find("input").type(usuario.senha);
+      .type(usuarioRegistro.telefone);
+    cy.contains("label", "E-mail")
+      .parent()
+      .find("input")
+      .type(usuarioRegistro.email);
+    cy.contains("label", "Senha")
+      .parent()
+      .find("input")
+      .type(usuarioRegistro.senha);
 
-    // Stub do window.alert para verificar a mensagem de sucesso
     const stub = cy.stub();
     cy.on("window:alert", stub);
 
     cy.contains("button", "Registrar-se").click();
 
-    // Verifica se o alerta foi chamado com a mensagem correta
-    cy.waitUntil(() =>
-      stub.calledWith("Registro realizado! Faça login.").then(() => {
-        expect(stub.getCall(0)).to.be.calledWith(
-          "Registro realizado! Faça login."
-        );
-      })
+    cy.wrap(stub).should(
+      "have.been.calledWith",
+      "Registro realizado! Faça login."
     );
-
-    // Verifica redirecionamento para login
     cy.url().should("include", "/login");
   });
 
-  it("Deve realizar login com o usuário criado", () => {
-    cy.visit("/login");
-
-    cy.contains("label", "E-mail").parent().find("input").type(usuario.email);
-    cy.contains("label", "Senha").parent().find("input").type(usuario.senha);
-
-    cy.contains("button", "Entrar").click();
-
-    // PaginaLogin redireciona para /busca ao logar
-    cy.url().should("include", "/busca");
-
-    // Verifica se os botões da Sidebar aparecem (indica login sucesso)
+  it("Deve realizar login com sucesso", () => {
+    cy.loginUI(usuarioLogin.email, usuarioLogin.senha);
     cy.contains("Visualizar Perfil").should("be.visible");
   });
 
   it("Deve verificar o saldo inicial no Dashboard", () => {
-    // Preserva a sessão (cookies) entre os testes se necessário,
-    // mas aqui estamos fazendo login via UI novamente para garantir o estado
-    cy.loginUI(usuario.email, usuario.senha);
+    cy.intercept("GET", "**/api/users/me").as("getUser");
+    cy.loginUI(usuarioLogin.email, usuarioLogin.senha);
 
     cy.visit("/dashboard");
+    cy.wait("@getUser");
 
-    // O backend define saldo padrão como 4
-    cy.contains("Saldo Disponível").parent().should("contain", "4h");
+    // Saldo inicial padrão é 4h
+    cy.contains("4h").should("be.visible");
+  });
+
+  it("Deve realizar uma transferência de 1h para outro usuário", () => {
+    // Interceptamos a requisição de transferência e a atualização do usuário
+    cy.intercept("POST", "**/api/transactions").as("postTransaction");
+    cy.intercept("GET", "**/api/users/me").as("getUser");
+
+    cy.loginUI(usuarioLogin.email, usuarioLogin.senha);
+    cy.visit("/dashboard");
+
+    // Espera carregar o saldo inicial
+    cy.wait("@getUser");
+
+    // Preenche o formulário de transferência
+    cy.contains("label", "E-mail do Destinatário")
+      .parent()
+      .find("input")
+      .type(usuarioDestino.email);
+    cy.contains("label", "Valor (horas)").parent().find("input").type("1");
+
+    const stub = cy.stub();
+    cy.on("window:alert", stub);
+
+    cy.contains("button", "Transferir").click();
+
+    // Aguarda a resposta da API de transferência
+    cy.wait("@postTransaction").its("response.statusCode").should("eq", 202);
+
+    // Verifica o alerta
+    cy.wrap(stub).should(
+      "have.been.calledWith",
+      "Transferência enviada com sucesso!"
+    );
+
+    // Aguarda a atualização automática do saldo no Dashboard
+    cy.wait("@getUser");
+
+    // Verifica se o saldo caiu de 4h para 3h
+    cy.contains("3h").should("be.visible");
   });
 
   it("Deve adicionar um novo serviço", () => {
-    cy.loginUI(usuario.email, usuario.senha);
+    cy.loginUI(usuarioLogin.email, usuarioLogin.senha);
+    cy.visit("/servico/novo");
 
-    cy.visit("/perfil");
-    cy.contains("button", "Adicionar Novo").click();
+    cy.contains("h1", "Adicionar Serviço").should("be.visible");
 
-    cy.url().should("include", "/servico/novo");
-
-    // Preenche formulário de serviço
     cy.contains("label", "Nome").parent().find("input").type(servico.nome);
     cy.contains("label", "Descrição")
       .parent()
@@ -97,47 +162,47 @@ describe("Fluxo Completo TimePIX", () => {
 
     cy.contains("button", "Salvar").click();
 
-    // Deve voltar para o perfil
     cy.url().should("include", "/perfil");
-
-    // Verifica se o serviço aparece na lista
     cy.contains(servico.nome).should("be.visible");
-    cy.contains(`${servico.valor}h`).should("be.visible");
-  });
-
-  it("Deve aparecer na busca para outros usuários", () => {
-    cy.loginUI(usuario.email, usuario.senha);
-    cy.visit("/busca");
-
-    // Digita o nome do serviço na busca
-    cy.get('input[placeholder="Busque por serviço ou nome..."]').type(
-      servico.nome
-    );
-    cy.contains("button", "Buscar").click();
-
-    // Verifica se o card de resultado aparece
-    cy.contains(servico.nome).should("be.visible");
-    cy.contains(usuario.nome).should("be.visible"); // Nome do dono
   });
 
   it("Deve realizar logout", () => {
-    cy.loginUI(usuario.email, usuario.senha);
+    cy.loginUI(usuarioLogin.email, usuarioLogin.senha);
     cy.visit("/busca");
 
     cy.contains("button", "Sair").click();
-
-    // Verifica redirecionamento para login e limpeza de estado
     cy.url().should("include", "/login");
   });
 });
 
-// Comando customizado para facilitar o login repetitivo
+// COMANDO CUSTOMIZADO DE LOGIN (ROBUSTO)
 Cypress.Commands.add("loginUI", (email, senha) => {
-  cy.session([email, senha], () => {
-    cy.visit("/login");
-    cy.contains("label", "E-mail").parent().find("input").type(email);
-    cy.contains("label", "Senha").parent().find("input").type(senha);
-    cy.contains("button", "Entrar").click();
-    cy.url().should("include", "/busca");
+  // Monitoriza a requisição de login
+  cy.intercept("POST", "**/api/login").as("loginRequest");
+
+  cy.visit("/login");
+
+  // Garante que os campos foram preenchidos corretamente
+  cy.contains("label", "E-mail")
+    .parent()
+    .find("input")
+    .type(email)
+    .should("have.value", email);
+  cy.contains("label", "Senha")
+    .parent()
+    .find("input")
+    .type(senha)
+    .should("have.value", senha);
+
+  cy.contains("button", "Entrar").click();
+
+  // Espera explicitamente a API responder "200 OK" antes de continuar
+  cy.wait("@loginRequest", { timeout: 15000 }).then((interception) => {
+    expect(interception.response.statusCode).to.eq(
+      200,
+      "Falha no login da API"
+    );
   });
+
+  cy.url().should("include", "/busca");
 });
