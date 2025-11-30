@@ -114,6 +114,23 @@ services:
       - timepix_net
     command: ["python3", "worker_auditoria.py"]
 
+  # ======================
+  # Frontend Vite
+  # ======================
+  frontend:
+    image: node:20
+    container_name: timepix_frontend
+    working_dir: /app
+    volumes:
+      - ../frontend:/app
+    command: ["bash", "-c", "npm install && npm run dev -- --host"]
+    ports:
+      - "5173:5173"
+    networks:
+      - timepix_net
+    depends_on:
+      - app
+
 # ======================
 # Volumes e Rede
 # ======================
