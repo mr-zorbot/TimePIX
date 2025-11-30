@@ -12,13 +12,20 @@ from rabbitmq import RABBIT_HOST, RABBIT_PORT, RABBIT_USER, RABBIT_PASS
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL", "mysql+pymysql://user:pass@localhost/timepix_db")
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True,
+                       isolation_level="READ COMMITTED")
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 # Rabbit connection
 _creds = pika.PlainCredentials(RABBIT_USER, RABBIT_PASS)
+
 _params = pika.ConnectionParameters(
-    host=RABBIT_HOST, port=RABBIT_PORT, credentials=_creds)
+    host=RABBIT_HOST,
+    port=RABBIT_PORT,
+    credentials=_creds,
+    connection_attempts=10,
+    retry_delay=5
+)
 
 
 def process_transaction(tx_id: int):
@@ -26,15 +33,17 @@ def process_transaction(tx_id: int):
     try:
         # Recarrega a transação
         # Usa lock FOR UPDATE para proteção contra corrida
-        tx = db.query(Transaction).with_for_update().filter(
-            Transaction.id == tx_id).one_or_none()
+        tx = db.query(Transaction)\
+            .with_for_update(nowait=True)\
+            .filter(Transaction.id == tx_id)\
+            .one_or_none()
+
         if not tx:
             print(f"[worker] Transação {tx_id} não encontrada.")
             return
 
         if tx.status != "PENDING":
-            print(f"[worker] Transação {
-                  tx_id} já processada (status={tx.status}).")
+            print(f"Transação {tx_id} processada (status={tx.status}).")
             return
 
         sender = db.query(User).with_for_update().filter(
@@ -84,14 +93,19 @@ def process_transaction(tx_id: int):
 
 
 def publish_audit(payload: dict):
-    # publica na fila de auditoria
-    conn = pika.BlockingConnection(_params)
-    ch = conn.channel()
-    ch.queue_declare(queue="fila_auditoria", durable=True)
-    ch.basic_publish(exchange="", routing_key="fila_auditoria",
-                     body=json.dumps(payload, default=str),
-                     properties=pika.BasicProperties(delivery_mode=2))
-    conn.close()
+    try:
+        conn = pika.BlockingConnection(_params)
+        ch = conn.channel()
+        ch.queue_declare(queue="fila_auditoria", durable=True)
+        ch.basic_publish(
+            exchange="",
+            routing_key="fila_auditoria",
+            body=json.dumps(payload, default=str),
+            properties=pika.BasicProperties(delivery_mode=2)
+        )
+        conn.close()
+    except Exception as e:
+        print("[worker] Erro ao publicar auditoria:", e)
 
 
 def on_message(ch, method, properties, body):
